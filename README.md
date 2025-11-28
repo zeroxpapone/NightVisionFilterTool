@@ -22,6 +22,8 @@ Your support is greatly appreciated and helps me keep improving the tool.
     >
   </a>
 
+</div>
+
 # How to use <br>
 * Download the .exe file from the [Releases page](https://github.com/zeroxpapone/NightVisionFilters/releases) and run it. A settings.json file will be auto created in the same directory. <br>
 * I recommend checking that the default values ​​suit your tastes as I cannot guarantee that they will work well on all monitors. Hop on an offline raid to check them out. <br>
