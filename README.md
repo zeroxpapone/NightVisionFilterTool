@@ -1,8 +1,27 @@
 # NightVisionFilters <br>
 Made this to play EFT in the night without night visors. Should be working with both Nvidia and AMD gpus since it uses Windows APIs. <br>
 # Support my work <br>
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/zeroxpapone)
-[!["Github Sponsors"](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/zeroxpapone)
+Your support is greatly appreciated and helps me keep improving the tool.
+<div style="display:flex; gap:12px; align-items:center; margin-left:20px">
+
+  <a href="https://www.buymeacoffee.com/zeroxpapone" target="_blank">
+    <img 
+      src="https://cdn.buymeacoffee.com/buttons/default-orange.png" 
+      alt="Buy Me A Coffee" 
+      height="48"
+      style="border-radius:8px;"
+    >
+  </a>
+
+  <a href="https://github.com/sponsors/zeroxpapone" target="_blank">
+    <img 
+      src="https://img.shields.io/badge/Sponsor_on_GitHub-181717?style=flat&logo=github" 
+      alt="GitHub Sponsors" 
+      height="48"
+      style="border-radius:8px;"
+    >
+  </a>
+
 # How to use <br>
 * Download the .exe file from the [Releases page](https://github.com/zeroxpapone/NightVisionFilters/releases) and run it. A settings.json file will be auto created in the same directory. <br>
 * I recommend checking that the default values ​​suit your tastes as I cannot guarantee that they will work well on all monitors. Hop on an offline raid to check them out. <br>
