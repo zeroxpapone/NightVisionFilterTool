@@ -4,6 +4,8 @@ import threading
 import time
 import math
 import os
+import socket
+import sys
 from ctypes import windll, byref, Structure, c_void_p, c_int, c_ushort, POINTER, c_wchar_p, c_wchar, WINFUNCTYPE
 
 # Librerie esterne
@@ -13,9 +15,11 @@ from PIL import Image, ImageDraw
 
 # --- CONFIGURAZIONE ---
 CONFIG_FILE = "settings.json"
+ICON_FILE = "icon.png" # Il nome del tuo file icona
 HOTKEY = "ctrl+f10"
+LOCAL_PORT = 65432 
 
-# DEFAULT BASATI SUL PROGRAMMA C#
+# DEFAULT SETTINGS
 DEFAULT_SETTINGS = {
     "brightness": 0.53,
     "contrast": 0.85,
@@ -54,13 +58,22 @@ windll.gdi32.GetDeviceGammaRamp.restype = c_int
 MonitorEnumProc = WINFUNCTYPE(c_int, c_void_p, c_void_p, POINTER(RECT), c_int)
 
 # --- FUNZIONI DI SISTEMA ---
+def resource_path(relative_path):
+    """ Ottiene il percorso assoluto alla risorsa, funzionante per dev e per PyInstaller onefile """
+    try:
+        # PyInstaller crea una cartella temporanea in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 def get_primary_monitor_name():
     primary_name = []
     def callback(hMonitor, hdcMonitor, lprcMonitor, dwData):
         mon_info = MONITORINFOEX()
         mon_info.cbSize = ctypes.sizeof(MONITORINFOEX)
         if windll.user32.GetMonitorInfoW(hMonitor, byref(mon_info)):
-            if mon_info.dwFlags & 1: # PRIMARY
+            if mon_info.dwFlags & 1: 
                 primary_name.append(mon_info.szDevice)
                 return 0 
         return 1
@@ -87,8 +100,32 @@ def check_and_create_config():
         try:
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(DEFAULT_SETTINGS, f, indent=4)
-            print(f"File {CONFIG_FILE} creato.")
         except: pass
+
+# --- GESTIONE COMUNICAZIONE LOCALE ---
+def try_send_command_to_existing_instance():
+    try:
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        client_socket.settimeout(0.1)
+        client_socket.sendto(b"TOGGLE", ("127.0.0.1", LOCAL_PORT))
+        client_socket.close()
+        return True
+    except Exception:
+        return False
+
+def start_command_listener(state_obj):
+    def listener():
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            server_socket.bind(("127.0.0.1", LOCAL_PORT))
+            while True:
+                data, addr = server_socket.recvfrom(1024)
+                if data == b"TOGGLE":
+                    state_obj.toggle()
+        except Exception as e:
+            print(f"Listener error: {e}")
+    t = threading.Thread(target=listener, daemon=True)
+    t.start()
 
 # --- GESTIONE STATO ---
 class DisplayState:
@@ -99,14 +136,12 @@ class DisplayState:
         dc = get_monitor_dc()
         if dc:
             if not windll.gdi32.GetDeviceGammaRamp(dc, byref(self.original_ramp)):
-                print("Warning: Lettura iniziale fallita. Uso lineare.")
                 self.original_ramp = create_linear_ramp()
             windll.gdi32.DeleteDC(dc)
         else:
             self.original_ramp = create_linear_ramp()
 
     def restore_defaults(self):
-        print("Ripristino Default...")
         dc = get_monitor_dc()
         if dc:
             windll.gdi32.SetDeviceGammaRamp(dc, byref(self.original_ramp))
@@ -121,7 +156,6 @@ class DisplayState:
                     file_settings = json.load(f)
                     settings.update(file_settings)
             
-            # Parametri
             b_input = float(settings["brightness"])
             c_input = float(settings["contrast"])
             gamma_val = float(settings["gamma"])
@@ -131,31 +165,16 @@ class DisplayState:
             g_scale = float(settings.get("green_scale", 1.0))
             b_scale = float(settings.get("blue_scale", 1.0))
 
-            # Fattori di calcolo
             brightness_offset = b_input - 0.5
             contrast_gain = c_input * 2.0
-
-            print(f"Applying -> Bri: {b_input}, Con: {c_input}, Gam: {gamma_val}")
 
             new_ramp = RAMP()
             
             for i in range(256):
                 val = i / 255.0
-                
-                # 1. GAMMA (Prima di tutto)
                 val = math.pow(val, 1.0 / gamma_val)
-                
-                # 2. LUMINOSITA' (Offset)
-                # Applicandolo PRIMA del contrasto, permettiamo al contrasto di "correggere"
-                # eventuali neri alzati se il contrasto è alto (>0.5).
                 val = val + brightness_offset
-                
-                # 3. CONTRASTO (Gain pivot 0.5)
-                # Questo espande i valori. Se il nero era diventato 0.05,
-                # il contrasto alto lo spinge giù: (0.05 - 0.5) * 1.44 + 0.5 = -0.14 -> 0.
                 val = (val - 0.5) * contrast_gain + 0.5
-
-                # Clamp
                 val = max(0.0, min(1.0, val))
 
                 new_ramp.Red[i]   = int(max(0, min(65535, val * 65535 * r_scale)))
@@ -169,7 +188,6 @@ class DisplayState:
                 windll.gdi32.DeleteDC(dc)
 
         except Exception as e:
-            print(f"Errore: {e}")
             self.restore_defaults()
 
     def toggle(self):
@@ -182,6 +200,16 @@ state = DisplayState()
 
 # --- GUI ---
 def create_image():
+    # Cerca l'icona personalizzata (dentro l'exe o nella cartella)
+    icon_path = resource_path(ICON_FILE)
+    
+    if os.path.exists(icon_path):
+        try:
+            return Image.open(icon_path)
+        except Exception:
+            pass # Se fallisce, usa il default sotto
+            
+    # Fallback: Quadrato rosso
     img = Image.new('RGB', (64, 64), (255, 0, 0))
     d = ImageDraw.Draw(img)
     d.rectangle([20, 20, 44, 44], fill=(255, 255, 255))
@@ -203,8 +231,16 @@ def hotkey_handler():
     time.sleep(0.2)
 
 def main():
+    test_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        test_socket.bind(("127.0.0.1", LOCAL_PORT))
+        test_socket.close()
+    except OSError:
+        try_send_command_to_existing_instance()
+        sys.exit(0)
+
     check_and_create_config()
-    print("NVFT Avviato. Pipeline: Gamma -> Brightness -> Contrast.")
+    start_command_listener(state)
     keyboard.add_hotkey(HOTKEY, hotkey_handler)
     setup_tray().run()
 

@@ -1,0 +1,24 @@
+--- FILE DI COMPILAZIONE (DA IGNORARE) ---
+
+build/
+dist/
+*.spec
+
+--- FILE TEMPORANEI PYTHON ---
+
+pycache/
+*.py[cod]
+*$py.class
+
+--- AMBIENTI VIRTUALI ---
+
+venv/
+env/
+
+--- LOGS ---
+
+*.log
+
+--- NOTE ---
+
+Manteniamo settings.json, icon.png e icon.ico
