@@ -2,6 +2,7 @@ import json
 import os
 import winreg
 import sys
+import shutil
 from .utils import get_app_dir
 
 APP_RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
@@ -9,7 +10,11 @@ APP_RUN_NAME = "NVFT"
 
 class ConfigManager:
     def __init__(self):
-        self.app_dir = get_app_dir()
+        # Use LocalAppData for persistence
+        self.app_dir = os.path.join(os.environ["LOCALAPPDATA"], "NVFT")
+        if not os.path.exists(self.app_dir):
+            os.makedirs(self.app_dir)
+
         self.config_file = os.path.join(self.app_dir, "settings.json")
         self.presets_file = os.path.join(self.app_dir, "presets.json")
         
@@ -28,11 +33,32 @@ class ConfigManager:
         self.current_settings = self.default_settings.copy()
         self.presets = {}
         
+        # Migrate if needed
+        self._migrate_old_config()
+        
         self.load_settings()
         self.load_presets()
         
         # Sync autostart status with registry
         self.sync_autostart_registry()
+
+    def _migrate_old_config(self):
+        """Migrate settings from old executable directory if they exist and new ones don't."""
+        old_dir = get_app_dir()
+        old_settings = os.path.join(old_dir, "settings.json")
+        old_presets = os.path.join(old_dir, "presets.json")
+        
+        if not os.path.exists(self.config_file) and os.path.exists(old_settings):
+            try:
+                shutil.copy2(old_settings, self.config_file)
+            except Exception as e:
+                print(f"Failed to migrate settings: {e}")
+                
+        if not os.path.exists(self.presets_file) and os.path.exists(old_presets):
+            try:
+                shutil.copy2(old_presets, self.presets_file)
+            except Exception as e:
+                print(f"Failed to migrate presets: {e}")
 
     def load_settings(self):
         if os.path.exists(self.config_file):

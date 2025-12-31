@@ -26,7 +26,8 @@ class InputManager:
         # Main Toggle
         if self.main_hotkey:
             try:
-                keyboard.add_hotkey(self.main_hotkey, self._on_toggle, suppress=True)
+                # suppress=False ensures the key event is passed to other apps (like games)
+                keyboard.add_hotkey(self.main_hotkey, self._on_toggle, suppress=False)
             except Exception as e:
                 print(f"Failed to register main hotkey '{self.main_hotkey}': {e}")
 
@@ -37,7 +38,7 @@ class InputManager:
                 if hk:
                     try:
                         # Capture name in lambda default arg to avoid closure scope issues
-                        keyboard.add_hotkey(hk, lambda n=name: self._on_preset(n), suppress=True)
+                        keyboard.add_hotkey(hk, lambda n=name: self._on_preset(n), suppress=False)
                     except Exception as e:
                         print(f"Failed to register hotkey '{hk}' for preset {name}: {e}")
 

@@ -13,7 +13,7 @@ from .gui import SettingsApp
 def create_tray_icon():
     # Try loading from file or create programmatically
     # In original it was 'icon.png' in root.
-    icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "icon.png")
+    icon_path = resource_path("icon.png")
     if os.path.exists(icon_path):
         return Image.open(icon_path)
     
