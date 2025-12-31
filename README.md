@@ -10,7 +10,9 @@ Your support is greatly appreciated and helps me keep improving the tool.
 
 ## How to use
 
-* Download the .exe file from the [Releases page](https://github.com/zeroxpapone/NightVisionFilterTool/releases) and run it. Configuration files (`settings.json` and `presets.json`) will be auto-created in the same directory.
+* **Running from source**: Install dependencies with `pip install -r requirements.txt`, then run `python -m src.main` from the project root directory.
+* **Download**: Check the Releases page for the latest executable (if available).
+* Configuration files (`settings.json` and `presets.json`) are stored in the same directory as the executable/script.
 * I recommend checking that the default values suit your tastes as I cannot guarantee that they will work well on all monitors. Hop on an offline raid to check them out.
 * The shortcut to toggle "filters" on/off is **CTRL + F10** by default. It can be changed through the Settings panel (v2.0 and above).
 * **Save your favorite settings as presets** for quick access! Click "💾 Save Current" in the Presets section to create a new preset, then load it anytime with a single click.

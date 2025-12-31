@@ -6,7 +6,7 @@ dist/
 
 --- PYTHON TEMP FILES ---
 
-pycache/
+__pycache__/
 *.py[cod]
 *$py.class
 
